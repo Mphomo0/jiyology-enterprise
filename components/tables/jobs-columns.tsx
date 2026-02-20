@@ -7,7 +7,7 @@ export type Job = {
   clientId: string
   title: string
   description: string
-  status: 'pending' | 'in_progress' | 'completed'
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   scheduledDate?: number
   createdAt: number
 }
@@ -30,6 +30,7 @@ export const columns: ColumnDef<Job>[] = [
         pending: 'bg-yellow-500',
         in_progress: 'bg-blue-500',
         completed: 'bg-green-500',
+        cancelled: 'bg-gray-500',
       }
       return (
         <span

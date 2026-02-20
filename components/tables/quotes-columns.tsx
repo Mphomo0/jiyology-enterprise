@@ -2,24 +2,56 @@
 
 import { ColumnDef } from '@tanstack/react-table'
 import { formatCurrency } from '@/lib/currency'
+import { Badge } from '@/components/ui/badge'
 
 export type Quote = {
   _id: string
   clientId: string
   jobId?: string
+  quoteNumber: string
+  subtotal: number
+  taxRate: number
+  taxAmount: number
+  discountType?: 'percentage' | 'fixed'
+  discountValue?: number
+  discountAmount?: number
   total: number
-  status: 'draft' | 'sent' | 'accepted' | 'rejected'
+  validUntil: number
+  paymentTerms: string
+  notes?: string
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired'
   createdAt: number
   updatedAt?: number
+  client?: {
+    name: string
+    email?: string
+  } | null
+}
+
+const statusStyles: Record<Quote['status'], { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }> = {
+  draft: { variant: 'secondary', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
+  sent: { variant: 'default', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
+  viewed: { variant: 'default', className: 'bg-purple-100 text-purple-700 hover:bg-purple-100' },
+  accepted: { variant: 'default', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
+  rejected: { variant: 'destructive', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
+  expired: { variant: 'secondary', className: 'bg-orange-100 text-orange-700 hover:bg-orange-100' },
 }
 
 export const columns: ColumnDef<Quote>[] = [
   {
-    accessorKey: '_id',
-    header: 'Quote ID',
+    accessorKey: 'quoteNumber',
+    header: 'Quote #',
     cell: ({ getValue }) => {
-      const id = getValue<string>()
-      return id.slice(0, 8).toUpperCase()
+      const quoteNumber = getValue<string>()
+      return <span className="font-mono font-medium">{quoteNumber}</span>
+    },
+  },
+  {
+    accessorKey: 'client',
+    header: 'Client',
+    cell: ({ row }) => {
+      const client = row.original.client
+      return <span>{client?.name || 'Unknown'}</span>
     },
   },
   {
@@ -27,7 +59,7 @@ export const columns: ColumnDef<Quote>[] = [
     header: 'Total',
     cell: ({ getValue }) => {
       const total = getValue<number>()
-      return formatCurrency(total)
+      return <span className="font-medium">{formatCurrency(total)}</span>
     },
   },
   {
@@ -35,40 +67,34 @@ export const columns: ColumnDef<Quote>[] = [
     header: 'Status',
     cell: ({ getValue }) => {
       const status = getValue<Quote['status']>()
-      const statusColors: Record<Quote['status'], string> = {
-        draft: 'bg-gray-500',
-        sent: 'bg-blue-500',
-        accepted: 'bg-green-500',
-        rejected: 'bg-red-500',
-      }
+      const style = statusStyles[status]
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-white text-xs ${
-            statusColors[status]
-          }`}
-        >
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+        <Badge variant={style.variant} className={style.className}>
+          {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+        </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: 'validUntil',
+    header: 'Valid Until',
+    cell: ({ getValue }) => {
+      const timestamp = getValue<number>()
+      const date = new Date(timestamp)
+      const isExpired = timestamp < Date.now()
+      return (
+        <span className={isExpired ? 'text-red-600' : ''}>
+          {date.toLocaleDateString()}
         </span>
       )
     },
   },
   {
     accessorKey: 'createdAt',
-    header: 'Created At',
+    header: 'Created',
     cell: ({ getValue }) => {
       const timestamp = getValue<number>()
-      const date = new Date(timestamp)
-      return date.toLocaleDateString()
-    },
-  },
-  {
-    accessorKey: 'updatedAt',
-    header: 'Updated At',
-    cell: ({ getValue }) => {
-      const timestamp = getValue<number | undefined>()
-      if (!timestamp) return '-'
-      const date = new Date(timestamp)
-      return date.toLocaleDateString()
+      return <span className="text-muted-foreground">{new Date(timestamp).toLocaleDateString()}</span>
     },
   },
   {

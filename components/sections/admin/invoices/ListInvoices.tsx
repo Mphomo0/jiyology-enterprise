@@ -14,17 +14,21 @@ interface InvoiceWithClient {
   _id: string
   clientId: string
   status: string
+  client?: {
+    name: string
+    email?: string
+    address?: string
+  } | null
 }
 
 export default function ListInvoices() {
   const router = useRouter()
-  const invoices = useQuery(api.invoices.getInvoices) ?? []
-  const clients = useQuery(api.clients.getClients) ?? []
+  const invoices = useQuery(api.invoices.getInvoicesWithClients) ?? []
   const deleteInvoice = useMutation(api.invoices.remove)
 
   const getClientForInvoice = useCallback((clientId: string) => {
-    return clients.find(c => c._id === clientId)
-  }, [clients])
+    return invoices.find(i => i.clientId === clientId)?.client
+  }, [invoices])
 
   const columns = useMemo(() => {
     return baseColumns.map((col) => {
@@ -40,7 +44,7 @@ export default function ListInvoices() {
                 await deleteInvoice({ id } as any)
               }
             }
-            const client = getClientForInvoice(row.original.clientId)
+            const client = row.original.client
             const { InvoiceActionsCell } = require('@/components/tables/InvoiceActionsCell')
             return (
               <InvoiceActionsCell
@@ -57,19 +61,23 @@ export default function ListInvoices() {
       }
       return col
     })
-  }, [deleteInvoice, router, getClientForInvoice])
+  }, [deleteInvoice, router])
 
   return (
-    <div className='space-y-4'>
-      <div className='flex justify-end'>
-        <Link href='/admin/invoices/add'>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
+          <p className="text-muted-foreground">Manage your invoices and payments</p>
+        </div>
+        <Link href="/admin/invoices/add">
           <Button>
-            <Plus className='mr-2 h-4 w-4' />
-            Add Invoice
+            <Plus className="mr-2 h-4 w-4" />
+            New Invoice
           </Button>
         </Link>
       </div>
-      <DataTable columns={columns} data={invoices} searchPlaceholder='Search invoices...' />
+      <DataTable columns={columns} data={invoices} searchPlaceholder="Search invoices..." />
     </div>
   )
 }

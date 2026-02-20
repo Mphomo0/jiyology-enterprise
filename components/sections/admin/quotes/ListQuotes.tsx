@@ -14,17 +14,21 @@ interface QuoteWithClient {
   _id: string
   clientId: string
   status: string
+  client?: {
+    name: string
+    email?: string
+    address?: string
+  } | null
 }
 
 export default function ListQuotes() {
   const router = useRouter()
-  const quotes = useQuery(api.quotes.getQuotes) ?? []
-  const clients = useQuery(api.clients.getClients) ?? []
+  const quotes = useQuery(api.quotes.getQuotesWithClients) ?? []
   const deleteQuote = useMutation(api.quotes.remove)
 
   const getClientForQuote = useCallback((clientId: string) => {
-    return clients.find(c => c._id === clientId)
-  }, [clients])
+    return quotes.find(q => q.clientId === clientId)?.client
+  }, [quotes])
 
   const columns = useMemo(() => {
     return baseColumns.map((col) => {
@@ -40,7 +44,7 @@ export default function ListQuotes() {
                 await deleteQuote({ id } as any)
               }
             }
-            const client = getClientForQuote(row.original.clientId)
+            const client = row.original.client
             const { ActionsCell } = require('@/components/tables/ActionsCell')
             return (
               <ActionsCell
@@ -57,19 +61,23 @@ export default function ListQuotes() {
       }
       return col
     })
-  }, [deleteQuote, router, getClientForQuote])
+  }, [deleteQuote, router])
 
   return (
-    <div className='space-y-4'>
-      <div className='flex justify-end'>
-        <Link href='/admin/quotes/add'>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Quotes</h1>
+          <p className="text-muted-foreground">Manage your quotes and proposals</p>
+        </div>
+        <Link href="/admin/quotes/add">
           <Button>
-            <Plus className='mr-2 h-4 w-4' />
-            Add Quote
+            <Plus className="mr-2 h-4 w-4" />
+            New Quote
           </Button>
         </Link>
       </div>
-      <DataTable columns={columns} data={quotes} searchPlaceholder='Search quotes...' />
+      <DataTable columns={columns} data={quotes} searchPlaceholder="Search quotes..." />
     </div>
   )
 }
